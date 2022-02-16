@@ -19,6 +19,8 @@ static int8_t  Send_buf[6] = {0} ;
 #define ALL_CYCLE 0X00
 #define SINGLE_CYCLE 0X01
 
+boolean startuphum = false;
+boolean off = false;
 
 int ledcolor = 0;
 int a = 500; //this sets how long the stays one color for
@@ -49,6 +51,20 @@ delay(200);//wait for 200ms
 
 }
 
+void startupsound() {
+  if(startuphum == true) {
+    startuphum = false;
+    mp3_6bytes(CMD_PLAY_W_VOL, 0X1E02);
+    }
+}
+
+void poweroffsound() {
+  if(off == true) {
+    off == false;
+    mp3_6bytes(CMD_PLAY_W_VOL, 0X1E01);
+    }
+}
+
 void loop(){
   
   if (digitalRead(button) == true) { 
@@ -56,11 +72,18 @@ void loop(){
   Serial.println("butt");
     if (status == true){
     colors();
+    startuphum = true;
+    startupsound();
+    
     } 
     else{
+      off = true;
+      poweroffsound();
+      delay(1150);
       digitalWrite(red, LOW);
       digitalWrite(blue, LOW);
       digitalWrite(green, LOW);
+      
     }
   
   
@@ -68,7 +91,6 @@ void loop(){
   delay(50); // keeps a small delay 
 }
 }
-
 
 void colors() {
   
@@ -91,7 +113,7 @@ Serial.println(buttonToggleCounter);
  if (buttonToggleCounter == 1) {
     digitalWrite(red, LOW);
     digitalWrite(blue, HIGH);
-    digitalWrite(green, HIGH);  
+    digitalWrite(green, LOW);  
   } 
  if (buttonToggleCounter == 2) {
     digitalWrite(red, HIGH);
@@ -121,10 +143,10 @@ if (buttonToggleCounter == 6) {
     digitalWrite(red, HIGH);
     digitalWrite(blue, LOW);
     digitalWrite(green, LOW);
-    
   }
 
-if (buttonToggleCounter == 7) {buttonToggleCounter = 0;
+if (buttonToggleCounter == 7) {
+  buttonToggleCounter = 0;
 }
 
 if (buttonToggleCounter == 0) {
@@ -132,4 +154,39 @@ digitalWrite(red, HIGH);
 digitalWrite(green, HIGH);
 digitalWrite(blue, HIGH);
 }
+}
+
+void mp3_Basic(int8_t command)
+{
+  Send_buf[0] = 0x7e; //starting byte
+  Send_buf[1] = 0x02; //the number of bytes of the command without starting byte and ending byte
+  Send_buf[2] = command; 
+  Send_buf[3] = 0xef; //
+  sendBytes(4);
+}
+void mp3_5bytes(int8_t command, uint8_t dat)
+{
+  Send_buf[0] = 0x7e; //starting byte
+  Send_buf[1] = 0x03; //the number of bytes of the command without starting byte and ending byte
+  Send_buf[2] = command; 
+  Send_buf[3] = dat; //
+  Send_buf[4] = 0xef; //
+  sendBytes(5);
+}
+void mp3_6bytes(int8_t command, int16_t dat)
+{
+  Send_buf[0] = 0x7e; //starting byte
+  Send_buf[1] = 0x04; //the number of bytes of the command without starting byte and ending byte
+  Send_buf[2] = command; 
+  Send_buf[3] = (int8_t)(dat >> 8);//datah
+  Send_buf[4] = (int8_t)(dat); //datal
+  Send_buf[5] = 0xef; //
+  sendBytes(6);
+}
+void sendBytes(uint8_t nbytes)
+{
+  for(uint8_t i=0; i < nbytes; i++)
+  {
+    myMP3.write(Send_buf[i]) ;
+  }
 }
